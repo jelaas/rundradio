@@ -1,5 +1,5 @@
 CC=musl-gcc-x86_32
-CFLAGS=-Wall
+CFLAGS=-Wall -D_GNU_SOURCE
 all:	rundradio
 rpm:	rundradio
 	strip rundradio
