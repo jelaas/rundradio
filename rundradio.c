@@ -150,6 +150,11 @@ int main(int argc, char **argv)
 						if(i >= var.maxfds) var.maxfds = i+1;
 						break;
 					}
+					if(i == (conf.count-1)) {
+						/* all possible connections used */
+						fprintf(stderr, "All possible connections used: %d. Use -c to increase number of possible concurrent connections.\n", conf.count);
+						close(fd);
+					}
 				}
 			}
 		}
