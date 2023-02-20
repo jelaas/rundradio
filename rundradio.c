@@ -77,24 +77,25 @@ int main(int argc, char **argv)
 	   messages written by a messenger is sent to all listeners
 	*/
 
+	/* socket for messengers to connect */
 	var.fd_in = socket( AF_INET, SOCK_STREAM, 0 );
 	setsockopt(var.fd_in, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one));
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(4433);
+	addr.sin_port = htons(conf.mport);
 	if (bind(var.fd_in, (struct sockaddr*) &addr, sizeof(struct sockaddr_in)) < 0) {
 		return -1;
 	}
 	listen(var.fd_in,3);
 
+	/* socket for listeners to connect */
 	var.fd_out = socket( AF_INET, SOCK_STREAM, 0 );
-				
 	setsockopt(var.fd_out, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(one));
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(4434);
+	addr.sin_port = htons(conf.lport);
 	if (bind(var.fd_out, (struct sockaddr*) &addr, sizeof(struct sockaddr_in)) < 0) {
 		return -1;
 	}
