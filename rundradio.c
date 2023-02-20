@@ -12,21 +12,64 @@
 
 struct {
 	int fd_in, fd_out, maxfds;
-	struct pollfd fds[1000];
+	struct pollfd *fds;
 } var;
 
 struct {
 	int verbose;
+	int count;
+	int lport, mport;
 } conf;
 
-int main()
+int main(int argc, char **argv)
 {
 	struct sockaddr_in addr;
 	int i, j, one = 1;
 	ssize_t n;
 	char buf[128];
 
-	conf.verbose = 1;
+	conf.count = 1000;
+	conf.lport = 8433;
+	conf.mport = 8434;
+
+	while(argc > 1 && argv[1][0] == '-') {
+		if(!strcmp(argv[1], "-h")) {
+			printf("rundradio\n"
+			       " -c N            maximum number of connections (1000)\n"
+			       " -h              this help\n"
+			       " -l PORT         listener port (8433)\n"
+			       " -m PORT         messenger port (8434)\n"
+			       " -v              verbose\n"
+			       "\n"
+			       "Sends messages from messengers to all listeners.\n"
+			       "\n"
+				);
+			exit(0);
+		}
+		if(!strcmp(argv[1], "-v")) {
+			conf.verbose = 1;			
+		}
+		if(!strcmp(argv[1], "-c")) {
+			conf.count = atoi(argv[2]);
+			argv++;
+			argc--;
+		}
+		if(!strcmp(argv[1], "-l")) {
+			conf.lport = atoi(argv[2]);
+			argv++;
+			argc--;
+		}
+		if(!strcmp(argv[1], "-m")) {
+			conf.mport = atoi(argv[2]);
+			argv++;
+			argc--;
+		}
+		argv++;
+		argc--;
+	}
+
+	var.fds = calloc(conf.count, sizeof(struct pollfd));
+	if(!var.fds) exit(2);
 
 	/* create two listening sockets. listen only on 127.0.0.1
 	   the first socket is for messenger(s)
@@ -57,7 +100,7 @@ int main()
 	}
 	listen(var.fd_out,3);
 
-	for(i=0;i<1000;i++) {
+	for(i=0;i<conf.count;i++) {
 		var.fds[i].fd = -1;
 		var.fds[i].events = POLLIN;
 	}
@@ -74,7 +117,7 @@ int main()
 			/* set non-blocking on accepted connections so we never block in read or write */
 			fd = accept4(var.fds[0].fd, NULL, NULL, SOCK_NONBLOCK);
 			if(fd >= 0) {
-				for(i=2;i<1000;i++) {
+				for(i=2;i<conf.count;i++) {
 					if(var.fds[i].fd == -1) {
 						var.fds[i].fd = fd;
 						/* Set events to POLLIN|POLLPRI for messenger.
@@ -86,6 +129,11 @@ int main()
 						if(i >= var.maxfds) var.maxfds = i+1;
 						break;
 					}
+					if(i == (conf.count-1)) {
+						/* all possible connections used */
+						fprintf(stderr, "All possible connections used: %d. Use -c to increase number of possible concurrent connections.\n", conf.count);
+						close(fd);
+					}
 				}
 			}
 		}
@@ -94,7 +142,7 @@ int main()
 			/* set non-blocking on accepted connections so we never block in read or write */
 			fd = accept4(var.fds[1].fd, NULL, NULL, SOCK_NONBLOCK);
 			if(fd >= 0) {
-				for(i=2;i<1000;i++) {
+				for(i=2;i<conf.count;i++) {
 					if(var.fds[i].fd == -1) {
 						var.fds[i].fd = fd;
 						/* Set events to POLLIN for listener */
