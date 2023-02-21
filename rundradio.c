@@ -183,6 +183,11 @@ int main(int argc, char **argv)
 					/* these errors on a nonblocking socket means we should wait and try again */
 					if(errno == EAGAIN) continue;
 					if(errno == EWOULDBLOCK) continue;
+
+					/* all other errors => close connection */
+					close(fds[i].fd);
+					fds[i].fd = -1;
+					continue;
 				}
 				/* spread message to all listeners */
 				for(j=2;j<maxfds;j++) {
