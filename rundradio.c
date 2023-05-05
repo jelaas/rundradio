@@ -192,6 +192,7 @@ int main(int argc, char **argv)
 				/* spread message to all listeners */
 				for(j=2;j<maxfds;j++) {
 					if(fds[j].events != POLLIN) continue;
+					if(fds[j].fd == -1) continue;
 					
 					/* close listener connection on any error when writing to listener */
 					if(write(fds[j].fd, buf, n) <= 0) {
